@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# Power vs. Dimension for 15 Relationships
+
+
+import math
+import os
+import sys
+
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from joblib import Parallel, delayed
+
+from hyppo.independence import KMERF, MGC, Dcorr, Hsic, HHG, CCA, RV
+from simulations import make_marron_wand_classification, MARRON_WAND_SIMS
+
+
+sys.path.append(os.path.realpath(".."))
+
+
+sns.set_theme(color_codes=True, style="ticks", context="talk", font_scale=1.5)
+PALETTE = sns.color_palette("Set1")
+sns.set_palette(PALETTE[2:5] + PALETTE[6:], n_colors=9)
+
+
+DIMENSIONS = [2**i for i in range(2, 13)]
+SAMP_SIZE = 256
+REPS = range(10000)
+
+
+SAVE_PATH = "n-{}_p-{}_{}".format(
+    int(SAMP_SIZE), int(DIMENSIONS[0]), int(DIMENSIONS[-1])
+)
+FIG_PATH = "figs"
+
+
+TESTS = {
+    "KMERF": KMERF(),
+    "MGC": MGC(),
+    "Dcorr": Dcorr(),
+    "Hsic": Hsic(),
+    "HHG": HHG(),
+    "CCA": CCA(),
+    "RV": RV(),
+}
+
+
+def _sim_slice(X, p):
+    """
+    Generate x, y from each sim
+    """
+    X_t = X[:, :p]
+    y_t = np.concatenate((np.zeros(SAMP_SIZE // 2), np.ones(SAMP_SIZE // 2)))
+    return X_t, y_t
+
+
+def _perm_stat(est, X, p):
+    """
+    Generates null and alternate distributions
+    """
+    X, y = _sim_slice(X, p)
+    obs_stat = est.statistic(X, y)
+    permy = np.random.permutation(y)
+    perm_stat = est.statistic(X, permy)
+
+    return obs_stat, perm_stat
+
+
+def _nonperm_pval(est, X, p):
+    """
+    Generates fast  permutation pvalues
+    """
+    X, y = _sim_slice(X, p)
+    pvalue = est.test(X, y)[1]
+    return pvalue
+
+
+def compute_null(rep, est, est_name, sim, n=100, p=1):
+    """
+    Calculates empirical null and alternate distribution for each test.
+    """
+    X, _ = make_marron_wand_classification(
+        n_samples=SAMP_SIZE,
+        n_dim=DIMENSIONS[-1],
+        n_informative=1,
+        simulation=sim,
+        seed=rep,
+    )
+    if est_name in ["KMERF", "Dcorr", "Hsic"]:
+        pval = _nonperm_pval(est, X, p)
+        save_kwargs = {"X": [pval]}
+    else:
+        alt_dist, null_dist = _perm_stat(est, X, p)
+        save_kwargs = {"X": [alt_dist, null_dist], "delimiter": ","}
+    np.savetxt(
+        "{}/{}_{}_{}_{}.txt".format(SAVE_PATH, sim, est_name, p, rep), **save_kwargs
+    )
+
+
+# Run this block to regenerate power curves. Note that this takes a very long time!
+_ = Parallel(n_jobs=24, verbose=100)(
+    [
+        delayed(compute_null)(rep, est, est_name, sim, p=dim)
+        for rep in REPS
+        for est_name, est in TESTS.items()
+        for sim in MARRON_WAND_SIMS.keys()
+        for dim in DIMENSIONS
+    ]
+)
