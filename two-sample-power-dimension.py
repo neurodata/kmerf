@@ -4,12 +4,10 @@
 # Power vs. Dimension for 15 Relationships
 
 
-import math
 import os
 import sys
 
 import numpy as np
-import matplotlib.pyplot as plt
 import seaborn as sns
 from joblib import Parallel, delayed
 
@@ -20,20 +18,14 @@ from simulations import make_marron_wand_classification, MARRON_WAND_SIMS
 sys.path.append(os.path.realpath(".."))
 
 
-sns.set_theme(color_codes=True, style="ticks", context="talk", font_scale=1.5)
-PALETTE = sns.color_palette("Set1")
-sns.set_palette(PALETTE[2:5] + PALETTE[6:], n_colors=9)
-
-
-DIMENSIONS = [2**i for i in range(2, 13)]
-SAMP_SIZE = 256
+DIMENSIONS = [2**i for i in range(2, 11)]
+SAMP_SIZE = 100
 REPS = range(10000)
 
 
 SAVE_PATH = "n-{}_p-{}_{}".format(
     int(SAMP_SIZE), int(DIMENSIONS[0]), int(DIMENSIONS[-1])
 )
-FIG_PATH = "figs"
 
 
 TESTS = {
@@ -61,6 +53,7 @@ def _perm_stat(est, X, p):
     Generates null and alternate distributions
     """
     X, y = _sim_slice(X, p)
+    y = y.reshape(-1, 1)
     obs_stat = est.statistic(X, y)
     permy = np.random.permutation(y)
     perm_stat = est.statistic(X, permy)
@@ -100,7 +93,7 @@ def compute_null(rep, est, est_name, sim, n=100, p=1):
 
 
 # Run this block to regenerate power curves. Note that this takes a very long time!
-_ = Parallel(n_jobs=24, verbose=100)(
+_ = Parallel(n_jobs=-1, verbose=100)(
     [
         delayed(compute_null)(rep, est, est_name, sim, p=dim)
         for rep in REPS
