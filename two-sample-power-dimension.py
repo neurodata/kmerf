@@ -10,7 +10,8 @@ import sys
 import numpy as np
 from joblib import Parallel, delayed
 
-from hyppo.independence import KMERF, MGC, Dcorr, Hsic, HHG, CCA, RV
+from hyppo.independence import MGC, Dcorr, Hsic, HHG, CCA, RV
+from kmerf import KMERF
 from simulations import make_marron_wand_classification, MARRON_WAND_SIMS
 
 
