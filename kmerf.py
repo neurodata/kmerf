@@ -35,7 +35,7 @@ class KMERF(IndependenceTest):
             rf_y = y.ravel()
         self.clf.fit(x, rf_y)
         distx = np.sqrt(1 - sim_matrix(self.clf, x))
-        if x.shape[1] == y.shape[1]:
+        if y.shape[1] and x.shape[1] == y.shape[1]:
             disty = np.sqrt(1 - sim_matrix(self.clf, y))
         else:
             disty = pairwise_distances(y, metric="euclidean")
