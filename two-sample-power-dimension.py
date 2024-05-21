@@ -8,7 +8,6 @@ import os
 import sys
 
 import numpy as np
-import seaborn as sns
 from joblib import Parallel, delayed
 
 from hyppo.independence import KMERF, MGC, Dcorr, Hsic, HHG, CCA, RV
@@ -20,7 +19,7 @@ sys.path.append(os.path.realpath(".."))
 
 DIMENSIONS = [2**i for i in range(2, 11)]
 SAMP_SIZE = 100
-REPS = range(10000)
+REPS = range(1000)
 
 
 SAVE_PATH = "n-{}_p-{}_{}".format(

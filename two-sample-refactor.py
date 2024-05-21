@@ -18,8 +18,13 @@ TESTS = [
 
 
 def refactor_data_power(
-    alg="Dcorr", sim="linear", type="d", alpha=0.05, max_reps=10000
+    alg="Dcorr",
+    sim="linear",
+    alpha=0.05,
+    max_reps=10000,
+    fig_name="two-sample-power-vs-d",
 ):
+    type = fig_name[-1]
     if type == "d":
         file_path = "n-100_p-4_1024"
         sample_dimensions = [2**i for i in range(2, 11)]
@@ -55,7 +60,7 @@ def refactor_data_power(
                 1 + len(alt_dist)
             )
         power[i] = empirical_power
-    np.savetxt(f"results/{sim}-{alg}-power-vs-{type}.csv", power, delimiter=",")
+    np.savetxt(f"two-sample-results/{sim}-{alg}-{fig_name}.csv", power, delimiter=",")
 
 
 _ = Parallel(n_jobs=-1, verbose=100)(

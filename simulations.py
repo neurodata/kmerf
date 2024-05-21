@@ -4,7 +4,6 @@ import numpy as np
 # keys: names of each simulation corresponding to the class MarronWandSims
 # values: probabilities associated with the mixture of Gaussians
 MARRON_WAND_SIMS = {
-    "gaussian": [1],
     "skewed_unimodal": [1 / 5, 1 / 5, 3 / 5],
     "strongly_skewed": [1 / 8] * 8,
     "kurtotic_unimodal": [2 / 3, 1 / 3],
@@ -19,6 +18,7 @@ MARRON_WAND_SIMS = {
     "asymmetric_double_claw": [*[46 / 100] * 2, *[1 / 300] * 3, *[7 / 300] * 3],
     "smooth_comb": [2 ** (5 - i) / 63 for i in range(6)],
     "discrete_comb": [*[2 / 7] * 3, *[1 / 21] * 3],
+    "independent": [],
 }
 
 
@@ -48,7 +48,7 @@ def make_marron_wand_classification(
     n_samples,
     n_dim=4096,
     n_informative=256,
-    simulation: str = "gaussian",
+    simulation: str = "independent",
     rho: int = 0,
     band_type: str = "ma",
     return_params: bool = False,
@@ -139,24 +139,9 @@ def make_marron_wand_classification(
             f"of dimensions, {n_dim}"
         )
     if simulation not in MARRON_WAND_SIMS.keys():
-        raise ValueError(
-            f"Simulation must be: trunk, trunk_overlap, trunk_mix, {MARRON_WAND_SIMS.keys()}"
-        )
+        raise ValueError(f"Simulation must be: {MARRON_WAND_SIMS.keys()}")
 
     rng = np.random.default_rng(seed=seed)
-
-    if rho != 0:
-        if band_type == "ma":
-            cov = _moving_avg_cov(n_informative, rho)
-        elif band_type == "ar":
-            cov = _autoregressive_cov(n_informative, rho)
-        else:
-            raise ValueError(f'Band type {band_type} must be one of "ma", or "ar".')
-    else:
-        cov = np.identity(n_informative)
-
-    # allow arbitrary uniform scaling of the covariance matrix
-    cov = scaling_factor * cov
 
     # speed up computations for large multivariate normal matrix with SVD approximation
     if n_informative > 1000:
@@ -164,62 +149,99 @@ def make_marron_wand_classification(
     else:
         mvg_sampling_method = "svd"
 
-    mixture_idx = rng.choice(
-        len(MARRON_WAND_SIMS[simulation]),  # type: ignore
-        size=n_samples // 2,
-        replace=True,
-        p=MARRON_WAND_SIMS[simulation],
-    )
-    # the parameters used for each Gaussian in the mixture for each Marron Wand simulation
-    norm_params = MarronWandSims(n_dim=n_informative, cov=cov)(simulation)
-    G = np.fromiter(
-        (
-            rng_children.multivariate_normal(
-                *(norm_params[i]), size=1, method=mvg_sampling_method
-            )
-            for i, rng_children in zip(mixture_idx, rng.spawn(n_samples // 2))
-        ),
-        dtype=np.dtype((float, n_informative)),
-    )
-
-    # as the dimensionality of the simulations increasing, we are adding more and
-    # more noise to the data using the w parameter
-    w_vec = np.array([1.0 / np.sqrt(i) for i in range(1, n_informative + 1)])
-
-    # create new generator instance to ensure reproducibility with multiple runs with the same seed
-    rng_F = np.random.default_rng(seed=seed).spawn(2)
-
-    X = np.vstack(
-        (
-            rng_F[0].multivariate_normal(
-                np.zeros(n_informative), cov, n_samples // 2, method=mvg_sampling_method
-            ),
-            (1 - w_vec)
-            * rng_F[1].multivariate_normal(
-                np.zeros(n_informative), cov, n_samples // 2, method=mvg_sampling_method
-            )
-            + w_vec * G.reshape(n_samples // 2, n_informative),
-        )
-    )
-
-    if n_dim > n_informative:
-        # create new generator instance to ensure reproducibility with multiple runs with the same seed
-        rng_noise = np.random.default_rng(seed=seed)
-        X = np.hstack(
+    if simulation == "independent":
+        X = np.vstack(
             (
-                X,
-                np.hstack(
-                    [
-                        rng_children.normal(loc=0, scale=1, size=(X.shape[0], 1))
-                        for rng_children in rng_noise.spawn(n_dim - n_informative)
-                    ]
+                rng.multivariate_normal(
+                    np.zeros(n_dim),
+                    np.identity(n_dim),
+                    n_samples // 2,
+                    method=mvg_sampling_method,
+                ),
+                rng.multivariate_normal(
+                    np.zeros(n_dim),
+                    np.identity(n_dim),
+                    n_samples // 2,
+                    method=mvg_sampling_method,
                 ),
             )
         )
+    else:
+        if rho != 0:
+            if band_type == "ma":
+                cov = _moving_avg_cov(n_informative, rho)
+            elif band_type == "ar":
+                cov = _autoregressive_cov(n_informative, rho)
+            else:
+                raise ValueError(f'Band type {band_type} must be one of "ma", or "ar".')
+        else:
+            cov = np.identity(n_informative)
+
+        # allow arbitrary uniform scaling of the covariance matrix
+        cov = scaling_factor * cov
+
+        mixture_idx = rng.choice(
+            len(MARRON_WAND_SIMS[simulation]),  # type: ignore
+            size=n_samples // 2,
+            replace=True,
+            p=MARRON_WAND_SIMS[simulation],
+        )
+        # the parameters used for each Gaussian in the mixture for each Marron Wand simulation
+        norm_params = MarronWandSims(n_dim=n_informative, cov=cov)(simulation)
+        G = np.fromiter(
+            (
+                rng_children.multivariate_normal(
+                    *(norm_params[i]), size=1, method=mvg_sampling_method
+                )
+                for i, rng_children in zip(mixture_idx, rng.spawn(n_samples // 2))
+            ),
+            dtype=np.dtype((float, n_informative)),
+        )
+
+        # as the dimensionality of the simulations increasing, we are adding more and
+        # more noise to the data using the w parameter
+        w_vec = np.array([1.0 / np.sqrt(i) for i in range(1, n_informative + 1)])
+
+        # create new generator instance to ensure reproducibility with multiple runs with the same seed
+        rng_F = np.random.default_rng(seed=seed).spawn(2)
+
+        X = np.vstack(
+            (
+                rng_F[0].multivariate_normal(
+                    np.zeros(n_informative),
+                    cov,
+                    n_samples // 2,
+                    method=mvg_sampling_method,
+                ),
+                (1 - w_vec)
+                * rng_F[1].multivariate_normal(
+                    np.zeros(n_informative),
+                    cov,
+                    n_samples // 2,
+                    method=mvg_sampling_method,
+                )
+                + w_vec * G.reshape(n_samples // 2, n_informative),
+            )
+        )
+
+        if n_dim > n_informative:
+            # create new generator instance to ensure reproducibility with multiple runs with the same seed
+            rng_noise = np.random.default_rng(seed=seed)
+            X = np.hstack(
+                (
+                    X,
+                    np.hstack(
+                        [
+                            rng_children.normal(loc=0, scale=1, size=(X.shape[0], 1))
+                            for rng_children in rng_noise.spawn(n_dim - n_informative)
+                        ]
+                    ),
+                )
+            )
 
     y = np.concatenate((np.zeros(n_samples // 2), np.ones(n_samples // 2)))
 
-    if return_params:
+    if return_params and not simulation == "independent":
         return [X, y, *list(zip(*norm_params)), G, w_vec]
     return X, y
 
@@ -242,9 +264,6 @@ class MarronWandSims:
             for method in dir(self)
             if not method.startswith("__")
         }
-
-    def gaussian(self):
-        return [[np.zeros(self.n_dim), self.cov]]
 
     def skewed_unimodal(self):
         return [
