@@ -31,7 +31,7 @@ class KMERF(IndependenceTest):
         Helper function that calculates the random forest based Dcorr test statistic.
         """
         rf_y = y
-        if y.shape[1] == 1:
+        if y.ndim > 1:
             rf_y = y.ravel()
         self.clf.fit(x, rf_y)
         distx = np.sqrt(1 - sim_matrix(self.clf, x))
