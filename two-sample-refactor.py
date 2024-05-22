@@ -33,7 +33,7 @@ def refactor_data_power(
         raise ValueError("Invalid type")
 
     for i, dim in enumerate(sample_dimensions):
-        if alg in ["KMERF", "Dcorr", "Hsic"]:
+        if alg in ["Dcorr", "Hsic"]:
             pvalues = []
             for rep in range(max_reps):
                 try:
@@ -66,10 +66,10 @@ def refactor_data_power(
 _ = Parallel(n_jobs=-1, verbose=100)(
     [
         delayed(refactor_data_power)(
-            alg=alg, type=type, sim=sim, alpha=0.05, max_reps=10000
+            alg=alg, fig_name=fig_name, sim=sim, alpha=0.05, max_reps=10000
         )
         for alg in TESTS
-        for type in ["d"]
+        for fig_name in ["two-sample-power-vs-d"]
         for sim in MARRON_WAND_SIMS.keys()
     ]
 )

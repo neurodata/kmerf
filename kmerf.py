@@ -30,21 +30,20 @@ class KMERF(IndependenceTest):
         r"""
         Helper function that calculates the random forest based Dcorr test statistic.
         """
-        rf_y = y
-        if y.ndim > 1:
-            rf_y = y.ravel()
-        self.clf.fit(x, rf_y)
-        distx = np.sqrt(1 - sim_matrix(self.clf, x))
-        if y.shape[1] and x.shape[1] == y.shape[1]:
-            disty = np.sqrt(1 - sim_matrix(self.clf, y))
+        self.clf.fit(x, y)
+        distx = 1 - sim_matrix(self.clf, x)
+        if x.shape[1] == 1:
+            disty = 1 - sim_matrix(self.clf, y.reshape(-1, 1))
         else:
-            disty = pairwise_distances(y, metric="euclidean")
+            disty = pairwise_distances(y.reshape(-1, 1), metric="euclidean")
         stat = _dcorr(distx, disty, bias=False, is_fast=False)
 
         return stat
 
     def test(self, x, y):
         n = x.shape[0]
+        # FIX: Fast Dcorr won't work if doing classification
+        y = y.reshape(-1, 1)
         stat = self.statistic(x, y)
         statx = self.statistic(x, x)
         staty = self.statistic(y, y)

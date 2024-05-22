@@ -29,7 +29,7 @@ SAVE_PATH = "n-{}_p-{}_{}".format(
 
 
 TESTS = {
-    "KMERF": KMERF(),
+    "KMERF": KMERF(forest="classifier"),
     "MGC": MGC(),
     "Dcorr": Dcorr(),
     "Hsic": Hsic(),
@@ -77,11 +77,11 @@ def compute_null(rep, est, est_name, sim, n=100, p=1):
     X, _ = make_marron_wand_classification(
         n_samples=SAMP_SIZE,
         n_dim=DIMENSIONS[-1],
-        n_informative=1,
+        n_informative=DIMENSIONS[-1],
         simulation=sim,
         seed=rep,
     )
-    if est_name in ["KMERF", "Dcorr", "Hsic"]:
+    if est_name in ["Dcorr", "Hsic"]:
         pval = _nonperm_pval(est, X, p)
         save_kwargs = {"X": [pval]}
     else:
