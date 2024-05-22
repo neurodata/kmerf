@@ -60,7 +60,7 @@ def refactor_data_power(
                 1 + len(alt_dist)
             )
         power[i] = empirical_power
-    np.savetxt(f"two-sample-results/{sim}-{alg}-{fig_name}.csv", power, delimiter=",")
+    np.savetxt(f"{fig_name}/{sim}-{alg}-{fig_name}.csv", power, delimiter=",")
 
 
 _ = Parallel(n_jobs=-1, verbose=100)(
