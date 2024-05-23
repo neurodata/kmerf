@@ -26,8 +26,8 @@ def refactor_data_power(
 ):
     type = fig_name[-1]
     if type == "d":
-        file_path = "n-100_p-4_1024"
-        sample_dimensions = [2**i for i in range(2, 11)]
+        file_path = "n-100_p-3_10"
+        sample_dimensions = range(3, 11)
         power = np.empty(len(sample_dimensions))
     else:
         raise ValueError("Invalid type")

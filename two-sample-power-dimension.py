@@ -18,7 +18,7 @@ from simulations import make_marron_wand_classification, MARRON_WAND_SIMS
 sys.path.append(os.path.realpath(".."))
 
 
-DIMENSIONS = [2**i for i in range(2, 11)]
+DIMENSIONS = range(3, 11)
 SAMP_SIZE = 100
 REPS = range(1000)
 
@@ -77,7 +77,7 @@ def compute_null(rep, est, est_name, sim, n=100, p=1):
     X, _ = make_marron_wand_classification(
         n_samples=SAMP_SIZE,
         n_dim=DIMENSIONS[-1],
-        n_informative=DIMENSIONS[-1],
+        n_informative=1,
         simulation=sim,
         seed=rep,
     )
