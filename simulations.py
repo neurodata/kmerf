@@ -57,21 +57,25 @@ def make_marron_wand_classification(
 ):
     """Generate Marron-Wand binary classification dataset.
 
-    The simulation is similar to that of :func:`sktree.datasets.make_trunk_classification`
+    The simulation is similar to that of
+    :func:`sktree.datasets.make_trunk_classification`
     where the first class is generated from a multivariate-Gaussians with mean vector of
     0's. The second class is generated from a mixture of Gaussians with mean vectors
-    specified by the Marron-Wand simulations, but as the dimensionality increases, the second
-    class distribution approaches the first class distribution by a factor of :math:`1 / sqrt(d)`.
+    specified by the Marron-Wand simulations, but as the dimensionality increases,
+    the second class distribution approaches the first class distribution by a factor
+    of :math:`1 / sqrt(d)`.
 
-    Full details for the Marron-Wand simulations can be found in :footcite:`marron1992exact`.
+    Full details for the Marron-Wand simulations can be found in
+    :footcite:`marron1992exact`.
 
-    Instead of the identity covariance matrix, one can implement a banded covariance matrix
-    that follows :footcite:`Bickel_2008`.
+    Instead of the identity covariance matrix, one can implement a banded covariance
+    matrix that follows :footcite:`Bickel_2008`.
 
     Parameters
     ----------
     n_samples : int
-        Number of sample to generate. Must be an even number, else the total number of samples generated will be ``n_samples - 1``.
+        Number of sample to generate. Must be an even number, else the total number of
+        samples generated will be ``n_samples - 1``.
     n_dim : int, optional
         The dimensionality of the dataset and the number of
         unique labels, by default 4096.
@@ -80,20 +84,22 @@ def make_marron_wand_classification(
         are Gaussian noise. Default is 256.
     simulation : str, optional
         Which simulation to run. Must be one of the
-        following Marron-Wand simulations: 'gaussian', 'skewed_unimodal', 'strongly_skewed',
-        'kurtotic_unimodal', 'outlier', 'bimodal', 'separated_bimodal', 'skewed_bimodal',
-        'trimodal', 'claw', 'double_claw', 'asymmetric_claw', 'asymmetric_double_claw',
-        'smooth_comb', 'discrete_comb'.
-        When calling the Marron-Wand simulations, only the covariance parameters are considered
-        (`rho` and `band_type`). Means are taken from :footcite:`marron1992exact`.
-        By default 'gaussian'.
+        following Marron-Wand simulations: 'independent', 'skewed_unimodal',
+        'strongly_skewed', 'kurtotic_unimodal', 'outlier', 'bimodal',
+        'separated_bimodal', 'skewed_bimodal', 'trimodal', 'claw', 'double_claw',
+        'asymmetric_claw', 'asymmetric_double_claw', 'smooth_comb', 'discrete_comb'.
+        When calling the Marron-Wand simulations, only the covariance parameters are
+        considered (`rho` and `band_type`). Means are taken from
+        :footcite:`marron1992exact`. By default 'independent'.
     rho : float, optional
-        The covariance value of the bands. By default 0 indicating, an identity matrix is used.
+        The covariance value of the bands. By default 0 indicating, an identity matrix
+        is used.
     band_type : str
-        The band type to use. For details, see Example 1 and 2 in :footcite:`Bickel_2008`.
-        Either 'ma', or 'ar'.
+        The band type to use. For details, see Example 1 and 2 in
+        :footcite:`Bickel_2008`. Either 'ma', or 'ar'.
     return_params : bool, optional
-        Whether or not to return the distribution parameters of the classes normal distributions.
+        Whether or not to return the distribution parameters of the classes normal
+        distributions.
     scaling_factor : float, optional
         The scaling factor for the covariance matrix. By default 1.
     seed : int, optional
@@ -114,16 +120,16 @@ def make_marron_wand_classification(
 
     Notes
     -----
-    **Marron-Wand Simulations**: The Marron-Wand simulations generate two classes of data with the
-    setup specified in the paper.
+    **Marron-Wand Simulations**: The Marron-Wand simulations generate two classes of
+    data with the setup specified in the paper.
 
-    Covariance: The covariance matrix among different dimensions is controlled by the ``rho`` parameter
-    and the ``band_type`` parameter. The ``band_type`` parameter controls the type of band to use, while
-    the ``rho`` parameter controls the specific scaling factor for the covariance matrix while going
-    from one dimension to the next.
+    Covariance: The covariance matrix among different dimensions is controlled by the
+    ``rho`` parameter and the ``band_type`` parameter. The ``band_type`` parameter
+    controls the type of band to use, while the ``rho`` parameter controls the specific
+    scaling factor for the covariance matrix while going from one dimension to the next.
 
-    For each dimension in the first distribution, there is a mean of :math:`1 / d`, where
-    ``d`` is the dimensionality. The covariance is the identity matrix.
+    For each dimension in the first distribution, there is a mean of :math:`1 / d`,
+    where ``d`` is the dimensionality. The covariance is the identity matrix.
 
     The second distribution has a mean vector that is the negative of the first.
     As ``d`` increases, the two distributions become closer and closer.
@@ -133,11 +139,6 @@ def make_marron_wand_classification(
     ----------
     .. footbibliography::
     """
-    if n_dim < n_informative:
-        raise ValueError(
-            f"Number of informative dimensions {n_informative} must be less than number "
-            f"of dimensions, {n_dim}"
-        )
     if simulation not in MARRON_WAND_SIMS.keys():
         raise ValueError(f"Simulation must be: {MARRON_WAND_SIMS.keys()}")
 
@@ -167,6 +168,11 @@ def make_marron_wand_classification(
             )
         )
     else:
+        if n_dim < n_informative:
+            raise ValueError(
+                f"Number of informative dimensions {n_informative} must be less than"
+                f" number of dimensions, {n_dim}"
+            )
         if rho != 0:
             if band_type == "ma":
                 cov = _moving_avg_cov(n_informative, rho)
@@ -186,7 +192,8 @@ def make_marron_wand_classification(
             replace=True,
             p=MARRON_WAND_SIMS[simulation],
         )
-        # the parameters used for each Gaussian in the mixture for each Marron Wand simulation
+        # the parameters used for each Gaussian in the mixture for each Marron Wand
+        # simulation
         norm_params = MarronWandSims(n_dim=n_informative, cov=cov)(simulation)
         G = np.fromiter(
             (
@@ -202,7 +209,8 @@ def make_marron_wand_classification(
         # more noise to the data using the w parameter
         w_vec = np.array([1.0 / np.sqrt(i) for i in range(1, n_informative + 1)])
 
-        # create new generator instance to ensure reproducibility with multiple runs with the same seed
+        # create new generator instance to ensure reproducibility with multiple runs
+        # with the same seed
         rng_F = np.random.default_rng(seed=seed).spawn(2)
 
         X = np.vstack(
@@ -225,7 +233,8 @@ def make_marron_wand_classification(
         )
 
         if n_dim > n_informative:
-            # create new generator instance to ensure reproducibility with multiple runs with the same seed
+            # create new generator instance to ensure reproducibility with multiple
+            # runs with the same seed
             rng_noise = np.random.default_rng(seed=seed)
             X = np.hstack(
                 (

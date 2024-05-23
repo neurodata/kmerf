@@ -28,9 +28,12 @@ def refactor_data_power(
     if type == "d":
         file_path = "n-100_p-3_10"
         sample_dimensions = range(3, 11)
-        power = np.empty(len(sample_dimensions))
+    elif type == "n":
+        file_path = "p-3_n-5_100"
+        sample_dimensions = [5] + range(10, 110, 10)
     else:
         raise ValueError("Invalid type")
+    power = np.empty(len(sample_dimensions))
 
     for i, dim in enumerate(sample_dimensions):
         if alg in ["Dcorr", "Hsic"]:
@@ -69,7 +72,7 @@ _ = Parallel(n_jobs=-1, verbose=100)(
             alg=alg, fig_name=fig_name, sim=sim, alpha=0.05, max_reps=10000
         )
         for alg in TESTS
-        for fig_name in ["two-sample-power-vs-d"]
+        for fig_name in ["two-sample-power-vs-d", "two-sample-power-vs-n"]
         for sim in MARRON_WAND_SIMS.keys()
     ]
 )
