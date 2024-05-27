@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Power vs. Sample Size for 15 Relationships
+# Power vs. Sample Size for 20 Relationships
 
 
 import os
@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 
 from hyppo.independence import MGC, Dcorr, Hsic, HHG, CCA, RV
 from kmerf import KMERF
-from simulations import make_marron_wand_classification, MARRON_WAND_SIMS
+from simulations import make_independence_simulation, INDEPENDENCE_SIMS
 
 
 sys.path.append(os.path.realpath(".."))
@@ -23,13 +23,13 @@ DIMENSION = 3
 REPS = range(1000)
 
 
-SAVE_PATH = "two-sample-p-{}_n-{}_{}".format(
+SAVE_PATH = "independence-p-{}_n-{}_{}".format(
     int(DIMENSION), int(SAMP_SIZES[0]), int(SAMP_SIZES[-1])
 )
 
 
 TESTS = {
-    "KMERF": KMERF(forest="classifier"),
+    "KMERF": KMERF(forest="regressor"),
     "MGC": MGC(),
     "Dcorr": Dcorr(),
     "Hsic": Hsic(),
@@ -76,11 +76,11 @@ def compute_null(rep, est, est_name, sim, n=100):
     """
     Calculates empirical null and alternate distribution for each test.
     """
-    X, _ = make_marron_wand_classification(
+    X, _ = make_independence_simulation(
         n_samples=SAMP_SIZES[-1],
         n_dim=DIMENSION,
-        n_informative=1,
         simulation=sim,
+        noise=True,
         seed=rep,
     )
     if est_name in ["Dcorr", "Hsic"]:
@@ -100,7 +100,7 @@ _ = Parallel(n_jobs=-1, verbose=100)(
         delayed(compute_null)(rep, est, est_name, sim, n=samp_size)
         for rep in REPS
         for est_name, est in TESTS.items()
-        for sim in MARRON_WAND_SIMS.keys()
+        for sim in INDEPENDENCE_SIMS
         for samp_size in SAMP_SIZES
     ]
 )

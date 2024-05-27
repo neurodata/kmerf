@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Power vs. Dimension for 15 Relationships
+# Power vs. Dimension for 20 Relationships
 
 
 import os
@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 
 from hyppo.independence import MGC, Dcorr, Hsic, HHG, CCA, RV
 from kmerf import KMERF
-from simulations import make_marron_wand_classification, MARRON_WAND_SIMS
+from simulations import make_independence_simulation, INDEPENDENCE_SIMS
 
 
 sys.path.append(os.path.realpath(".."))
@@ -23,13 +23,11 @@ SAMP_SIZE = 100
 REPS = range(1000)
 
 
-SAVE_PATH = "two-sample-n-{}_p-{}_{}".format(
-    int(SAMP_SIZE), int(DIMENSIONS[0]), int(DIMENSIONS[-1])
-)
+SAVE_PATH = "independence-n-{}_p-3_1000".format(int(SAMP_SIZE))
 
 
 TESTS = {
-    "KMERF": KMERF(forest="classifier"),
+    "KMERF": KMERF(forest="regressor"),
     "MGC": MGC(),
     "Dcorr": Dcorr(),
     "Hsic": Hsic(),
@@ -37,6 +35,28 @@ TESTS = {
     "CCA": CCA(),
     "RV": RV(),
 }
+
+
+def _find_dim_range(sim):
+    dim = 20
+    if sim in ["linear", "exponential", "cubic"]:
+        dim = 1000
+    elif sim in [
+        "joint_normal",
+        "sin_four_pi",
+        "sin_sixteen_pi",
+        "multiplicative_noise",
+    ]:
+        dim = 10
+    elif sim in [
+        "uncorrelated_bernoulli",
+        "logarithmic",
+        "multimodal_independence",
+    ]:
+        dim = 100
+    elif sim in ["square", "diamond"]:
+        dim = 40
+    return np.linspace(3, dim, 10, dtype=int) if dim > 10 else range(3, 11)
 
 
 def _sim_slice(X, p):
@@ -74,11 +94,12 @@ def compute_null(rep, est, est_name, sim, p=1):
     """
     Calculates empirical null and alternate distribution for each test.
     """
-    X, _ = make_marron_wand_classification(
+    dim_range = _find_dim_range(sim)
+    X, _ = make_independence_simulation(
         n_samples=SAMP_SIZE,
-        n_dim=DIMENSIONS[-1],
-        n_informative=1,
+        n_dim=dim_range[-1],
         simulation=sim,
+        noise=False,
         seed=rep,
     )
     if est_name in ["Dcorr", "Hsic"]:
@@ -98,7 +119,7 @@ _ = Parallel(n_jobs=-1, verbose=100)(
         delayed(compute_null)(rep, est, est_name, sim, p=dim)
         for rep in REPS
         for est_name, est in TESTS.items()
-        for sim in MARRON_WAND_SIMS.keys()
-        for dim in DIMENSIONS
+        for sim in INDEPENDENCE_SIMS
+        for dim in _find_dim_range(sim)
     ]
 )

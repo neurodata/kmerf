@@ -25,16 +25,28 @@ def refactor_data_power(
     fig_name="two-sample-power-vs-d",
 ):
     type = fig_name[-1]
+    if "two-sample" in fig_name:
+        file_path = "two-sample"
+    elif "independence" in fig_name:
+        file_path = "independence"
+    else:
+        raise ValueError(
+            f"fig_name is {fig_name}; must contain two-sample or independence"
+        )
+
     if type == "d":
-        file_path = "n-100_p-3_10"
+        if "two-sample" in fig_name:
+            file_path += "-n-100_p-3_10"
+        else:
+            file_path += "-n-100_p-3_1000"
         sample_dimensions = range(3, 11)
     elif type == "n":
-        file_path = "p-3_n-10_100"
+        file_path += "-p-3_n-10_100"
         sample_dimensions = range(10, 110, 10)
     else:
-        raise ValueError("Invalid type")
-    power = np.empty(len(sample_dimensions))
+        raise ValueError(f"fig_name is {fig_name}; must end in d or n")
 
+    power = np.empty(len(sample_dimensions))
     for i, dim in enumerate(sample_dimensions):
         if alg in ["Dcorr", "Hsic"]:
             pvalues = []
@@ -58,10 +70,7 @@ def refactor_data_power(
                     break
                 alt_dist.append(alt_data)
                 null_dist.append(null_data)
-            try:
-                cutoff = np.sort(null_dist)[math.ceil(len(null_dist) * (1 - alpha))]
-            except:
-                print(alg, sim, fig_name)
+            cutoff = np.sort(null_dist)[math.ceil(len(null_dist) * (1 - alpha))]
             empirical_power = (1 + (np.array(alt_dist) >= cutoff).sum()) / (
                 1 + len(alt_dist)
             )

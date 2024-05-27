@@ -21,6 +21,29 @@ MARRON_WAND_SIMS = {
     "independent": [],
 }
 
+INDEPENDENCE_SIMS = [
+    "linear",
+    "exponential",
+    "cubic",
+    "joint_normal",
+    "step",
+    "quadratic",
+    "w_shaped",
+    "spiral",
+    "uncorrelated_bernoulli",
+    "logarithmic",
+    "fourth_root",
+    "sin_four_pi",
+    "sin_sixteen_pi",
+    "square",
+    "two_parabolas",
+    "circle",
+    "ellipse",
+    "diamond",
+    "multiplicative_noise",
+    "multimodal_independence",
+]
+
 
 def _moving_avg_cov(n_dim, rho):
     # Create a meshgrid of indices
