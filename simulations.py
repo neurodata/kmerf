@@ -555,7 +555,7 @@ class IndependenceSims:
     def logarithmic(self):
         sig = np.identity(self.n_dim)
         x = self.rng.multivariate_normal(
-            np.zeros(self.n_dim), sig, size=self.samp_size)
+            np.zeros(self.n_dim), sig, size=self.samp_size
         )
         eps = self._calc_eps()
         y = np.log(x**2) + 3 * self.noise * eps

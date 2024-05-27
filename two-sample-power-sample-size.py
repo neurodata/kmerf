@@ -31,11 +31,11 @@ SAVE_PATH = "p-{}_n-{}_{}".format(
 TESTS = {
     "KMERF": KMERF(forest="classifier"),
     "MGC": MGC(),
-    #"Dcorr": Dcorr(),
-    #"Hsic": Hsic(),
-    #"HHG": HHG(),
-    #"CCA": CCA(),
-    #"RV": RV(),
+    "Dcorr": Dcorr(),
+    "Hsic": Hsic(),
+    "HHG": HHG(),
+    "CCA": CCA(),
+    "RV": RV(),
 }
 
 

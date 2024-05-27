@@ -9,8 +9,8 @@ from simulations import MARRON_WAND_SIMS
 TESTS = [
     "KMERF",
     "MGC",
-    #"Dcorr",
-    #"Hsic",
+    "Dcorr",
+    "Hsic",
     "HHG",
     "CCA",
     "RV",
