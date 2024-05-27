@@ -394,3 +394,279 @@ class MarronWandSims:
                 for l_mix in range(8, 11)
             ],
         ]
+
+
+def make_independence_simulation(
+    n_samples,
+    n_dim=1,
+    simulation: str = "linear",
+    noise: bool = False,
+    seed=None,
+    **kwargs,
+):
+    return IndependenceSims(samp_size=n_samples, n_dim=n_dim, noise=noise, seed=seed)(
+        simulation=simulation, **kwargs
+    )
+
+
+class IndependenceSims:
+
+    def __init__(self, samp_size=100, n_dim=1, noise=True, seed=None):
+        self.samp_size = samp_size
+        self.n_dim = n_dim
+        self.noise = noise
+        self.rng = np.random.default_rng(seed=seed)
+
+    def __call__(self, simulation, **kwargs):
+        sims = self._my_method_generator()
+        if simulation in sims.keys():
+            return sims[simulation](**kwargs)
+        else:
+            raise ValueError(f"simulation is not one of these: {sims.keys()}")
+
+    def _my_method_generator(self):
+        return {
+            method: getattr(self, method)
+            for method in dir(self)
+            if not method.startswith("__")
+        }
+
+    def _gen_coeffs(self):
+        """Calculates coefficients polynomials."""
+        return np.array([1 / (i + 1) for i in range(self.n_dim)]).reshape(-1, 1)
+
+    def _random_uniform(self, low=-1, high=1):
+        """Generate random uniform data."""
+        return np.array(self.rng.uniform(low, high, size=(self.samp_size, self.n_dim)))
+
+    def _calc_eps(self):
+        """Calculate noise."""
+        return np.random.normal(0, 1, size=(self.samp_size, 1))
+
+    def linear(self, low=-1, high=1):
+        x = self._random_uniform(low, high)
+        coeffs = self._gen_coeffs()
+        eps = self._calc_eps()
+        y = x @ coeffs + 1 * self.noise * eps
+        return x, y
+
+    def exponential(self, low=0, high=3):
+        x = self._random_uniform(low, high)
+        coeffs = self._gen_coeffs()
+        eps = self._calc_eps()
+        y = np.exp(x @ coeffs) + 10 * self.noise * eps
+        return x, y
+
+    def cubic(self, low=-1, high=1, cubs=[-12, 48, 128], scale=1 / 3):
+        x = self._random_uniform(low, high)
+        coeffs = self._gen_coeffs()
+        eps = self._calc_eps()
+        x_coeffs = x @ coeffs - scale
+        y = (
+            cubs[2] * x_coeffs**3
+            + cubs[1] * x_coeffs**2
+            + cubs[0] * x_coeffs**3
+            + 80 * self.noise * eps
+        )
+        return x, y
+
+    def joint_normal(self):
+        rho = 1 / (2 * self.n_dim)
+        cov1 = np.concatenate(
+            (np.identity(self.n_dim), rho * np.ones((self.n_dim, self.n_dim))), axis=1
+        )
+        cov2 = np.concatenate(
+            (rho * np.ones((self.n_dim, self.n_dim)), np.identity(self.n_dim)), axis=1
+        )
+        covT = np.concatenate((cov1.T, cov2.T), axis=1)
+        eps = self._calc_eps()
+        x = self.rng.multivariate_normal(np.zeros(2 * self.n_dim), covT, self.samp_size)
+        y = x[:, self.n_dim : 2 * self.n_dim] + 0.5 * self.noise * eps
+        x = x[:, : self.n_dim]
+        return x, y
+
+    def step(self, low=-1, high=1):
+        if self.n_dim > 1:
+            self.noise = True
+        x = self._random_uniform(low, high)
+        coeffs = self._gen_coeffs()
+        eps = self._calc_eps()
+        x_coeff = ((x @ coeffs) > 0) * 1
+        y = x_coeff + self.noise * eps
+        return x, y
+
+    def quadratic(self, low=-1, high=1):
+        x = self._random_uniform(low, high)
+        coeffs = self._gen_coeffs()
+        eps = self._calc_eps()
+        x_coeffs = x @ coeffs
+        y = x_coeffs**2 + 0.5 * self.noise * eps
+        return x, y
+
+    def w_shaped(self, low=-1, high=1):
+        x = self._random_uniform(low, high)
+        u = np.array(
+            self.rng.spawn(1)[0].uniform(0, 1, size=(self.samp_size, self.n_dim))
+        )
+        coeffs = self._gen_coeffs()
+        eps = self._calc_eps()
+        x_coeffs = x @ coeffs
+        u_coeffs = u @ coeffs
+        y = 4 * ((x_coeffs**2 - 0.5) ** 2 + u_coeffs / 500) + 0.5 * self.noise * eps
+        return x, y
+
+    def spiral(self, low=0, high=5):
+        if self.n_dim > 1:
+            self.noise = True
+        self.n_dim = 1
+        rx = self._random_uniform(low=low, high=high)
+        ry = rx
+        rx = np.repeat(rx, self.n_dim, axis=1)
+        z = rx
+        x = np.zeros((self.samp_size, self.n_dim))
+        x[:, 0] = np.cos(z[:, 0] * np.pi)
+        for i in range(self.n_dim - 1):
+            x[:, i + 1] = np.multiply(x[:, i], np.cos(z[:, i + 1] * np.pi))
+            x[:, i] = np.multiply(x[:, i], np.sin(z[:, i + 1] * np.pi))
+        x = np.multiply(rx, x)
+        y = np.multiply(ry, np.sin(z[:, 0].reshape(-1, 1) * np.pi))
+        eps = self._calc_eps()
+        y = y + 0.4 * self.n_dim * self.noise * eps
+        return x, y
+
+    def uncorrelated_bernoulli(self, prob=0.5):
+        rngs = self.rng.spawn(2)
+        binom = self.rng.binomial(1, prob, size=(self.samp_size, 1))
+        sig = np.identity(self.n_dim)
+        gauss_noise = rngs[0].multivariate_normal(
+            np.zeros(self.n_dim), sig, size=self.samp_size
+        )
+        x = (
+            rngs[1].binomial(1, prob, size=(self.samp_size, self.n_dim))
+            + 0.5 * self.noise * gauss_noise
+        )
+        coeffs = self._gen_coeffs()
+        eps = self._calc_eps()
+        x_coeffs = x @ coeffs
+        y = binom * 2 - 1
+        y = np.multiply(x_coeffs, y) + 0.5 * self.noise * eps
+        return x, y
+
+    def logarithmic(self):
+        sig = np.identity(self.n_dim)
+        x = self.rng.multivariate_normal(
+            np.zeros(self.n_dim), sig, size=self.samp_size)
+        )
+        eps = self._calc_eps()
+        y = np.log(x**2) + 3 * self.noise * eps
+        return x, y
+
+    def fourth_root(self, low=-1, high=1):
+        x = self._random_uniform(low, high)
+        eps = self._calc_eps()
+        coeffs = self._gen_coeffs()
+        x_coeffs = x @ coeffs
+        y = np.abs(x_coeffs) ** 0.25 + 0.25 * self.noise * eps
+        return x, y
+
+    def _sin(self, low=-1, high=1, period=4 * np.pi):
+        """Helper function to calculate sine simulation"""
+        x = self._random_uniform(low, high)
+        if self.n_dim > 1 or self.noise:
+            sig = np.identity(self.n_dim)
+            v = self.rng.spawn(1)[0].multivariate_normal(
+                np.zeros(self.n_dim), sig, size=self.samp_size
+            )
+            x = x + 0.02 * self.n_dim * v
+        eps = self._calc_eps()
+        if period == 4 * np.pi:
+            cc = 1
+        else:
+            cc = 0.5
+        y = np.sin(x * period) + cc * self.noise * eps
+        return x, y
+
+    def sin_four_pi(self, low=-1, high=1):
+        return self._sin(low=low, high=high, period=4 * np.pi)
+
+    def sin_sixteen_pi(self, low=-1, high=1):
+        return self._sin(low=low, high=high, period=16 * np.pi)
+
+    def _square_diamond(self, low=-1, high=1, period=-np.pi / 2):
+        """Helper function to calculate square/diamond simulation"""
+        rngs = self.rng.spawn(2)
+        u = self._random_uniform(low, high)
+        v = np.array(rngs[0].uniform(low, high, size=(self.samp_size, self.n_dim)))
+        sig = np.identity(self.n_dim)
+        gauss_noise = rngs[1].multivariate_normal(
+            np.zeros(self.n_dim), sig, size=self.samp_size
+        )
+        x = (
+            u * np.cos(period)
+            + v * np.sin(period)
+            + 0.05 * self.n_dim * gauss_noise * self.noise
+        )
+        y = -u * np.sin(period) + v * np.cos(period)
+        return x, y
+
+    def square(self, low=-1, high=1):
+        return self._square_diamond(low=low, high=high, period=-np.pi / 8)
+
+    def two_parabolas(self, low=-1, high=1, prob=0.5):
+        rngs = self.rng.spawn(2)
+        x = self._random_uniform(low, high)
+        coeffs = self._gen_coeffs()
+        u = rngs[0].binomial(1, prob, size=(self.samp_size, 1))
+        rand_noise = np.array(rngs[1].uniform(0, 1, size=(self.samp_size, self.n_dim)))
+        x_coeffs = x @ coeffs
+        y = (x_coeffs**2 + 2 * self.noise * rand_noise) * (u - 0.5)
+        return x, y
+
+    def _circle_ellipse(self, low=-1, high=1, radius=1):
+        """Helper function to calculate circle/ellipse simulation"""
+        rngs = self.rng.spawn(2)
+        if self.n_dim > 1:
+            self.noise = True
+        x = self._random_uniform(low, high)
+        rx = radius * np.ones((self.samp_size, self.n_dim))
+        unif = np.array(rngs[0].uniform(low, high, size=(self.samp_size, self.n_dim)))
+        sig = np.identity(self.n_dim)
+        gauss_noise = rngs[1].multivariate_normal(
+            np.zeros(self.n_dim), sig, size=self.samp_size
+        )
+        ry = np.ones((self.samp_size, self.n_dim))
+        x[:, 0] = np.cos(unif[:, 0] * np.pi)
+        for i in range(self.n_dim - 1):
+            x[:, i + 1] = x[:, i] * np.cos(unif[:, i + 1] * np.pi)
+            x[:, i] = x[:, i] * np.sin(unif[:, i + 1] * np.pi)
+        x = rx * x + 0.4 * self.noise * rx * gauss_noise
+        y = ry * np.sin(unif[:, 0].reshape(self.samp_size, 1) * np.pi)
+        return x, y
+
+    def circle(self, low=-1, high=1):
+        return self._circle_ellipse(low=low, high=high, radius=1)
+
+    def ellipse(self, low=-1, high=1):
+        return self._circle_ellipse(low=low, high=high, radius=5)
+
+    def diamond(self, low=-1, high=1):
+        return self._square_diamond(low=low, high=high, period=-np.pi / 4)
+
+    def multiplicative_noise(self):
+        rngs = self.rng.spawn(2)
+        sig = np.identity(self.n_dim)
+        x = rngs[0].multivariate_normal(np.zeros(self.n_dim), sig, size=self.samp_size)
+        y = rngs[1].multivariate_normal(np.zeros(self.n_dim), sig, size=self.samp_size)
+        y = np.multiply(x, y)
+        return x, y
+
+    def multimodal_independence(self, prob=0.5, sep1=3, sep2=2):
+        rngs = self.rng.spawn(4)
+        sig = np.identity(self.n_dim)
+        u = rngs[0].multivariate_normal(np.zeros(self.n_dim), sig, size=self.samp_size)
+        v = rngs[1].multivariate_normal(np.zeros(self.n_dim), sig, size=self.samp_size)
+        u_2 = rngs[2].binomial(1, prob, size=(self.samp_size, self.n_dim))
+        v_2 = rngs[3].binomial(1, prob, size=(self.samp_size, self.n_dim))
+        x = u / sep1 + sep2 * u_2 - 1
+        y = v / sep1 + sep2 * v_2 - 1
+        return x, y
