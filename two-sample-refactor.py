@@ -9,8 +9,8 @@ from simulations import MARRON_WAND_SIMS
 TESTS = [
     "KMERF",
     "MGC",
-    "Dcorr",
-    "Hsic",
+    #"Dcorr",
+    #"Hsic",
     "HHG",
     "CCA",
     "RV",
@@ -21,7 +21,7 @@ def refactor_data_power(
     alg="Dcorr",
     sim="linear",
     alpha=0.05,
-    max_reps=10000,
+    max_reps=1000,
     fig_name="two-sample-power-vs-d",
 ):
     type = fig_name[-1]
@@ -29,8 +29,8 @@ def refactor_data_power(
         file_path = "n-100_p-3_10"
         sample_dimensions = range(3, 11)
     elif type == "n":
-        file_path = "p-3_n-5_100"
-        sample_dimensions = [5] + range(10, 110, 10)
+        file_path = "p-3_n-10_100"
+        sample_dimensions = range(10, 110, 10)
     else:
         raise ValueError("Invalid type")
     power = np.empty(len(sample_dimensions))
@@ -58,7 +58,10 @@ def refactor_data_power(
                     break
                 alt_dist.append(alt_data)
                 null_dist.append(null_data)
-            cutoff = np.sort(null_dist)[math.ceil(len(null_dist) * (1 - alpha))]
+            try:
+                cutoff = np.sort(null_dist)[math.ceil(len(null_dist) * (1 - alpha))]
+            except:
+                print(alg, sim, fig_name)
             empirical_power = (1 + (np.array(alt_dist) >= cutoff).sum()) / (
                 1 + len(alt_dist)
             )

@@ -18,7 +18,7 @@ from simulations import make_marron_wand_classification, MARRON_WAND_SIMS
 sys.path.append(os.path.realpath(".."))
 
 
-SAMP_SIZES = [5] + range(10, 110, 10)
+SAMP_SIZES = range(10, 110, 10)
 DIMENSION = 3
 REPS = range(1000)
 
@@ -31,11 +31,11 @@ SAVE_PATH = "p-{}_n-{}_{}".format(
 TESTS = {
     "KMERF": KMERF(forest="classifier"),
     "MGC": MGC(),
-    "Dcorr": Dcorr(),
-    "Hsic": Hsic(),
-    "HHG": HHG(),
-    "CCA": CCA(),
-    "RV": RV(),
+    #"Dcorr": Dcorr(),
+    #"Hsic": Hsic(),
+    #"HHG": HHG(),
+    #"CCA": CCA(),
+    #"RV": RV(),
 }
 
 
