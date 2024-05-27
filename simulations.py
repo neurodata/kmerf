@@ -471,7 +471,8 @@ class IndependenceSims:
         return x, y
 
     def joint_normal(self):
-        rho = 1 / (2 * self.n_dim)
+        coeffs = self._gen_coeffs()
+        rho = 1 / (2 * coeffs)
         cov1 = np.concatenate(
             (np.identity(self.n_dim), rho * np.ones((self.n_dim, self.n_dim))), axis=1
         )
@@ -481,7 +482,7 @@ class IndependenceSims:
         covT = np.concatenate((cov1.T, cov2.T), axis=1)
         eps = self._calc_eps()
         x = self.rng.multivariate_normal(np.zeros(2 * self.n_dim), covT, self.samp_size)
-        y = x[:, self.n_dim : 2 * self.n_dim] + 0.5 * self.noise * eps
+        y = x[:, self.n_dim].reshape(-1, 1) + 0.5 * self.noise * eps
         x = x[:, : self.n_dim]
         return x, y
 
@@ -516,22 +517,24 @@ class IndependenceSims:
         return x, y
 
     def spiral(self, low=0, high=5):
+        coeffs = self._gen_coeffs()
         if self.n_dim > 1:
             self.noise = True
+        n_dim = self.n_dim
         self.n_dim = 1
         rx = self._random_uniform(low=low, high=high)
         ry = rx
-        rx = np.repeat(rx, self.n_dim, axis=1)
+        rx = np.repeat(rx, n_dim, axis=1)
         z = rx
-        x = np.zeros((self.samp_size, self.n_dim))
+        x = np.zeros((self.samp_size, n_dim))
         x[:, 0] = np.cos(z[:, 0] * np.pi)
-        for i in range(self.n_dim - 1):
+        for i in range(n_dim - 1):
             x[:, i + 1] = np.multiply(x[:, i], np.cos(z[:, i + 1] * np.pi))
             x[:, i] = np.multiply(x[:, i], np.sin(z[:, i + 1] * np.pi))
-        x = np.multiply(rx, x)
+        x = np.multiply(rx, x) * coeffs.ravel()
         y = np.multiply(ry, np.sin(z[:, 0].reshape(-1, 1) * np.pi))
         eps = self._calc_eps()
-        y = y + 0.4 * self.n_dim * self.noise * eps
+        y = y + 0.4 * n_dim * self.noise * eps
         return x, y
 
     def uncorrelated_bernoulli(self, prob=0.5):
@@ -553,12 +556,12 @@ class IndependenceSims:
         return x, y
 
     def logarithmic(self):
+        coeffs = self._gen_coeffs()
         sig = np.identity(self.n_dim)
-        x = self.rng.multivariate_normal(
-            np.zeros(self.n_dim), sig, size=self.samp_size)
-        )
+        x = self.rng.multivariate_normal(np.zeros(self.n_dim), sig, size=self.samp_size)
         eps = self._calc_eps()
-        y = np.log(x**2) + 3 * self.noise * eps
+        x_coeffs = x @ coeffs
+        y = np.log(x_coeffs**2) + 3 * self.noise * eps
         return x, y
 
     def fourth_root(self, low=-1, high=1):
@@ -571,6 +574,7 @@ class IndependenceSims:
 
     def _sin(self, low=-1, high=1, period=4 * np.pi):
         """Helper function to calculate sine simulation"""
+        coeffs = self._gen_coeffs()
         x = self._random_uniform(low, high)
         if self.n_dim > 1 or self.noise:
             sig = np.identity(self.n_dim)
@@ -583,7 +587,7 @@ class IndependenceSims:
             cc = 1
         else:
             cc = 0.5
-        y = np.sin(x * period) + cc * self.noise * eps
+        y = np.sin(x @ coeffs * period) + cc * self.noise * eps
         return x, y
 
     def sin_four_pi(self, low=-1, high=1):
@@ -595,6 +599,7 @@ class IndependenceSims:
     def _square_diamond(self, low=-1, high=1, period=-np.pi / 2):
         """Helper function to calculate square/diamond simulation"""
         rngs = self.rng.spawn(2)
+        coeffs = self._gen_coeffs()
         u = self._random_uniform(low, high)
         v = np.array(rngs[0].uniform(low, high, size=(self.samp_size, self.n_dim)))
         sig = np.identity(self.n_dim)
@@ -606,7 +611,7 @@ class IndependenceSims:
             + v * np.sin(period)
             + 0.05 * self.n_dim * gauss_noise * self.noise
         )
-        y = -u * np.sin(period) + v * np.cos(period)
+        y = -u @ coeffs * np.sin(period) + v @ coeffs * np.cos(period)
         return x, y
 
     def square(self, low=-1, high=1):
@@ -625,6 +630,7 @@ class IndependenceSims:
     def _circle_ellipse(self, low=-1, high=1, radius=1):
         """Helper function to calculate circle/ellipse simulation"""
         rngs = self.rng.spawn(2)
+        coeffs = self._gen_coeffs()
         if self.n_dim > 1:
             self.noise = True
         x = self._random_uniform(low, high)
@@ -634,13 +640,13 @@ class IndependenceSims:
         gauss_noise = rngs[1].multivariate_normal(
             np.zeros(self.n_dim), sig, size=self.samp_size
         )
-        ry = np.ones((self.samp_size, self.n_dim))
+        ry = np.ones((self.samp_size, 1))
         x[:, 0] = np.cos(unif[:, 0] * np.pi)
         for i in range(self.n_dim - 1):
             x[:, i + 1] = x[:, i] * np.cos(unif[:, i + 1] * np.pi)
             x[:, i] = x[:, i] * np.sin(unif[:, i + 1] * np.pi)
         x = rx * x + 0.4 * self.noise * rx * gauss_noise
-        y = ry * np.sin(unif[:, 0].reshape(self.samp_size, 1) * np.pi)
+        y = ry * np.sin(unif @ coeffs * np.pi)
         return x, y
 
     def circle(self, low=-1, high=1):
@@ -654,10 +660,11 @@ class IndependenceSims:
 
     def multiplicative_noise(self):
         rngs = self.rng.spawn(2)
+        coeffs = self._gen_coeffs()
         sig = np.identity(self.n_dim)
         x = rngs[0].multivariate_normal(np.zeros(self.n_dim), sig, size=self.samp_size)
         y = rngs[1].multivariate_normal(np.zeros(self.n_dim), sig, size=self.samp_size)
-        y = np.multiply(x, y)
+        y = np.multiply(x, y) @ coeffs
         return x, y
 
     def multimodal_independence(self, prob=0.5, sep1=3, sep2=2):
@@ -668,5 +675,5 @@ class IndependenceSims:
         u_2 = rngs[2].binomial(1, prob, size=(self.samp_size, self.n_dim))
         v_2 = rngs[3].binomial(1, prob, size=(self.samp_size, self.n_dim))
         x = u / sep1 + sep2 * u_2 - 1
-        y = v / sep1 + sep2 * v_2 - 1
+        y = v[:, 0] / sep1 + sep2 * v_2[:, 0] - 1
         return x, y
