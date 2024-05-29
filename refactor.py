@@ -41,7 +41,10 @@ def refactor_data_power(
             file_path += "-n-100_p-3_1000"
         sample_dimensions = range(3, 11)
     elif type == "n":
-        file_path += "-p-3_n-10_100"
+        if "two-sample" in fig_name:
+            file_path += "-p-10_n-10_100"
+        else:
+            file_path += "-p-3_n-10_100"
         sample_dimensions = range(10, 110, 10)
     else:
         raise ValueError(f"fig_name is {fig_name}; must end in d or n")

@@ -19,7 +19,7 @@ sys.path.append(os.path.realpath(".."))
 
 
 SAMP_SIZES = range(10, 110, 10)
-DIMENSION = 3
+DIMENSION = 10
 REPS = range(1000)
 
 
@@ -29,13 +29,13 @@ SAVE_PATH = "two-sample-p-{}_n-{}_{}".format(
 
 
 TESTS = {
-    "KMERF": KMERF(forest="classifier"),
-    "MGC": MGC(),
+    #"KMERF": KMERF(forest="classifier"),
+    #"MGC": MGC(),
     "Dcorr": Dcorr(),
     "Hsic": Hsic(),
-    "HHG": HHG(),
-    "CCA": CCA(),
-    "RV": RV(),
+    #"HHG": HHG(),
+    #"CCA": CCA(),
+    #"RV": RV(),
 }
 
 
