@@ -31,8 +31,8 @@ SAVE_PATH = "independence-p-{}_n-{}_{}".format(
 TESTS = {
     "KMERF": KMERF(forest="regressor"),
     "MGC": MGC(),
-    #"Dcorr": Dcorr(),
-    #"Hsic": Hsic(),
+    "Dcorr": Dcorr(),
+    "Hsic": Hsic(),
     "HHG": HHG(),
     "CCA": CCA(),
     "RV": RV(),
@@ -84,7 +84,10 @@ def compute_null(rep, est, est_name, sim, n=100):
         seed=rep,
     )
     if est_name in ["Dcorr", "Hsic"]:
-        pval = _nonperm_pval(est, X, n)
+        try:
+            pval = _nonperm_pval(est, X, n)
+        except ValueError:
+            pval = 1
         save_kwargs = {"X": [pval]}
     else:
         alt_dist, null_dist = _perm_stat(est, X, n)

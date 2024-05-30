@@ -87,7 +87,7 @@ _ = Parallel(n_jobs=-1, verbose=100)(
             alg=alg, fig_name=fig_name, sim=sim, alpha=0.05, max_reps=10000
         )
         for alg in TESTS
-        for fig_name in ["two-sample-power-vs-d", "two-sample-power-vs-n"]
+        for fig_name in ["two-sample-power-vs-d", "two-sample-power-vs-n"]#, "independence-power-vs-d", "independence-power-vs-n"]
         for sim in MARRON_WAND_SIMS.keys()
     ]
 )

@@ -88,7 +88,7 @@ def compute_null(rep, est, est_name, sim, p=1):
         alt_dist, null_dist = _perm_stat(est, X, p)
         save_kwargs = {"X": [alt_dist, null_dist], "delimiter": ","}
     np.savetxt(
-        "{}/{}_{}_{}_{}.txt".format(SAVE_PATH, sim, est_name, p, rep), **save_kwargs
+        f"{SAVE_PATH}/{sim}_{est_name}_{p}_{rep}.txt", **save_kwargs
     )
 
 
