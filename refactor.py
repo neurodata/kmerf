@@ -3,8 +3,13 @@ import math
 import numpy as np
 from joblib import Parallel, delayed
 
-from simulations import MARRON_WAND_SIMS, _find_dim_range
+from simulations import MARRON_WAND_SIMS, INDEPENDENCE_SIMS, _find_dim_range
 
+
+SIMULATIONS = {
+    "two-sample-power" : MARRON_WAND_SIMS.keys(),
+    "independence-power" : INDEPENDENCE_SIMS
+}
 
 TESTS = [
     "KMERF",
@@ -46,29 +51,13 @@ def refactor_data_power(
             "end in d or n"
         )
 
-    if type == "d":
-        FAST_ALGS = ["Dcorr", "Hsic"]
-        if "two-sample" in fig_name:
-            file_path += "-n-100_p-3_10"
-        else:
-            file_path += "-n-100_p-3_1000"
-        sample_dimensions = range(3, 11)
-    elif type == "n":
-        if "two-sample" in fig_name:
-            file_path += "-p-10_n-10_100"
-        else:
-            file_path += "-p-3_n-10_100"
-        sample_dimensions = range(10, 110, 10)
-    else:
-        raise ValueError(f"fig_name is {fig_name}; must end in d or n")
-
     power = np.empty(len(sample_dimensions))
-    for i, dim in enumerate(sample_dimensions):
+    for i, samp_dim in enumerate(sample_dimensions):
         if alg in FAST_ALGS:
             pvalues = []
             for rep in range(max_reps):
                 try:
-                    pvalue = np.genfromtxt(f"{file_path}/{sim}_{alg}_{dim}_{rep}.txt")
+                    pvalue = np.genfromtxt(f"{file_path}/{sim}_{alg}_{samp_dim}_{rep}.txt")
                 except FileNotFoundError:
                     break
                 pvalues.append(pvalue)
@@ -80,7 +69,7 @@ def refactor_data_power(
             for rep in range(max_reps):
                 try:
                     alt_data, null_data = np.genfromtxt(
-                        f"{file_path}/{sim}_{alg}_{dim}_{rep}.txt"
+                        f"{file_path}/{sim}_{alg}_{samp_dim}_{rep}.txt"
                     )
                 except FileNotFoundError:
                     break
@@ -104,7 +93,8 @@ _ = Parallel(n_jobs=-1, verbose=100)(
             "two-sample-power-vs-d",
             "two-sample-power-vs-n",
             "independence-power-vs-n",
-        ]  # , "independence-power-vs-d"]
-        for sim in MARRON_WAND_SIMS.keys()
+            "independence-power-vs-d"
+        ]
+        for sim in SIMULATIONS[fig_name[:-5]]
     ]
 )
