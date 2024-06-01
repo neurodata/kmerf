@@ -29,13 +29,13 @@ SAVE_PATH = "two-sample-p-{}_n-{}_{}".format(
 
 
 TESTS = {
-    #"KMERF": KMERF(forest="classifier"),
-    #"MGC": MGC(),
+    "KMERF": KMERF(forest="classifier"),
+    "MGC": MGC(),
     "Dcorr": Dcorr(),
     "Hsic": Hsic(),
-    #"HHG": HHG(),
-    #"CCA": CCA(),
-    #"RV": RV(),
+    "HHG": HHG(),
+    "CCA": CCA(),
+    "RV": RV(),
 }
 
 
@@ -83,15 +83,12 @@ def compute_null(rep, est, est_name, sim, n=100):
         simulation=sim,
         seed=rep,
     )
-    if est_name in ["Dcorr", "Hsic"]:
-        try:
-            pval = _nonperm_pval(est, X, n)
-        except ValueError:
-            pval = 1
-        save_kwargs = {"X": [pval]}
-    else:
-        alt_dist, null_dist = _perm_stat(est, X, n)
-        save_kwargs = {"X": [alt_dist, null_dist], "delimiter": ","}
+    #if est_name in ["Dcorr", "Hsic"]:
+    #    pval = _nonperm_pval(est, X, n)
+    #    save_kwargs = {"X": [pval]}
+    #else:
+    alt_dist, null_dist = _perm_stat(est, X, n)
+    save_kwargs = {"X": [alt_dist, null_dist], "delimiter": ","}
     np.savetxt(
         "{}/{}_{}_{}_{}.txt".format(SAVE_PATH, sim, est_name, n, rep), **save_kwargs
     )

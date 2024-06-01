@@ -34,7 +34,9 @@ def refactor_data_power(
             f"fig_name is {fig_name}; must contain two-sample or independence"
         )
 
+    FAST_ALGS = []
     if type == "d":
+        FAST_ALGS = ["Dcorr", "Hsic"]
         if "two-sample" in fig_name:
             file_path += "-n-100_p-3_10"
         else:
@@ -51,7 +53,7 @@ def refactor_data_power(
 
     power = np.empty(len(sample_dimensions))
     for i, dim in enumerate(sample_dimensions):
-        if alg in ["Dcorr", "Hsic"]:
+        if alg in FAST_ALGS:
             pvalues = []
             for rep in range(max_reps):
                 try:
@@ -87,7 +89,7 @@ _ = Parallel(n_jobs=-1, verbose=100)(
             alg=alg, fig_name=fig_name, sim=sim, alpha=0.05, max_reps=10000
         )
         for alg in TESTS
-        for fig_name in ["two-sample-power-vs-d", "two-sample-power-vs-n"]#, "independence-power-vs-d", "independence-power-vs-n"]
+        for fig_name in ["two-sample-power-vs-d", "two-sample-power-vs-n", "independence-power-vs-n"]#, "independence-power-vs-d"]
         for sim in MARRON_WAND_SIMS.keys()
     ]
 )
