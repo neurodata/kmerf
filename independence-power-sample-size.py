@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 
 from hyppo.independence import MGC, Dcorr, Hsic, HHG, CCA, RV
 from kmerf import KMERF
-from simulations import make_independence_simulation, INDEPENDENCE_SIMS
+from simulations import indep_sim, INDEPENDENCE_SIMS
 
 
 sys.path.append(os.path.realpath(".."))
@@ -39,23 +39,23 @@ TESTS = {
 }
 
 
-def _sim_slice(X, n):
+def _indep_sim_gen(sim, n, p, noise=True):
     """
     Generate x, y from each sim
     """
-    X_t = np.concatenate(
-        (X[: n // 2], X[SAMP_SIZES[-1] // 2 : SAMP_SIZES[-1] // 2 + n // 2])
-    )
-    y_t = np.concatenate((np.zeros(n // 2), np.ones(n // 2)))
-    return X_t, y_t
+    if sim in ["multiplicative_noise", "multimodal_independence"]:
+        x, y = indep_sim(sim, n, p)
+    else:
+        x, y = indep_sim(sim, n, p, noise=noise)
+
+    return x, y
 
 
-def _perm_stat(est, X, n):
+def _perm_stat(est, sim, n=100, p=3, noise=True):
     """
     Generates null and alternate distributions
     """
-    X, y = _sim_slice(X, n)
-    y = y.reshape(-1, 1)
+    X, y = _indep_sim_gen(sim, n, p, noise=noise)
     obs_stat = est.statistic(X, y)
     permy = np.random.permutation(y)
     perm_stat = est.statistic(X, permy)
@@ -63,11 +63,11 @@ def _perm_stat(est, X, n):
     return obs_stat, perm_stat
 
 
-def _nonperm_pval(est, X, n):
+def _nonperm_pval(est, sim, n=100, p=3, noise=True):
     """
     Generates fast  permutation pvalues
     """
-    X, y = _sim_slice(X, n)
+    X, y = _indep_sim_gen(sim, n, p, noise=noise)
     pvalue = est.test(X, y)[1]
     return pvalue
 
@@ -76,18 +76,11 @@ def compute_null(rep, est, est_name, sim, n=100):
     """
     Calculates empirical null and alternate distribution for each test.
     """
-    X, _ = make_independence_simulation(
-        n_samples=SAMP_SIZES[-1],
-        n_dim=DIMENSION,
-        simulation=sim,
-        noise=True,
-        seed=rep,
-    )
-    #if est_name in ["Dcorr", "Hsic"]:
-    #    pval = _nonperm_pval(est, X, n)
+    # if est_name in ["Dcorr", "Hsic"]:
+    # pval = _nonperm_pval(est, sim, n=n)
     #    save_kwargs = {"X": [pval]}
-    #else:
-    alt_dist, null_dist = _perm_stat(est, X, n)
+    # else:
+    alt_dist, null_dist = _perm_stat(est, sim, n=n)
     save_kwargs = {"X": [alt_dist, null_dist], "delimiter": ","}
     np.savetxt(
         "{}/{}_{}_{}_{}.txt".format(SAVE_PATH, sim, est_name, n, rep), **save_kwargs
@@ -100,7 +93,7 @@ _ = Parallel(n_jobs=-1, verbose=100)(
         delayed(compute_null)(rep, est, est_name, sim, n=samp_size)
         for rep in REPS
         for est_name, est in TESTS.items()
-        for sim in INDEPENDENCE_SIMS
+        for sim in INDEPENDENCE_SIMS.keys()
         for samp_size in SAMP_SIZES
     ]
 )
