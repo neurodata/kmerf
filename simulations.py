@@ -405,10 +405,11 @@ class _CheckInputs:
 
     def __call__(self, *args):
         if type(self.n) is not int or type(self.p) is not int:
-            raise ValueError("n and p must be ints")
+            raise ValueError(f"n and p must be ints; n is {type(self.n)} and p is {type(self.p)}")
 
         if self.n < 5 or self.p < 1:
             raise ValueError(
+                f"n is {self.n} and p is {self.p}; "
                 "n must be greater than or equal to 5 and p "
                 "must be greater than or equal to than 1"
             )
@@ -417,7 +418,7 @@ class _CheckInputs:
             if arg[1] is float and type(arg[0]) is int:
                 continue
             if type(arg[0]) is not arg[1]:
-                raise ValueError("Incorrect input variable type")
+                raise ValueError(f"{arg[0]} is {type(arg[0])}; expected {arg[1]}")
 
 
 def _gen_coeffs(p):
@@ -1638,4 +1639,4 @@ def _find_dim_range(sim):
         dim = 100
     elif sim in ["square", "diamond"]:
         dim = 40
-    return np.linspace(3, dim, 10, dtype=int) if dim > 10 else range(3, 11)
+    return [val.item() for val in np.linspace(3, dim, 10, dtype=int)] if dim > 10 else range(3, 11)
