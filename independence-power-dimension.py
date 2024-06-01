@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 
 from hyppo.independence import MGC, Dcorr, Hsic, HHG, CCA, RV
 from kmerf import KMERF
-from simulations import make_independence_simulation, INDEPENDENCE_SIMS
+from simulations import make_independence_simulation, INDEPENDENCE_SIMS, _find_dim_range
 
 
 sys.path.append(os.path.realpath(".."))
@@ -35,28 +35,6 @@ TESTS = {
     "CCA": CCA(),
     "RV": RV(),
 }
-
-
-def _find_dim_range(sim):
-    dim = 20
-    if sim in ["linear", "exponential", "cubic"]:
-        dim = 1000
-    elif sim in [
-        "joint_normal",
-        "sin_four_pi",
-        "sin_sixteen_pi",
-        "multiplicative_noise",
-    ]:
-        dim = 10
-    elif sim in [
-        "uncorrelated_bernoulli",
-        "logarithmic",
-        "multimodal_independence",
-    ]:
-        dim = 100
-    elif sim in ["square", "diamond"]:
-        dim = 40
-    return np.linspace(3, dim, 10, dtype=int) if dim > 10 else range(3, 11)
 
 
 def _sim_slice(X, p):

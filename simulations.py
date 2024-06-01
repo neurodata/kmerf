@@ -700,3 +700,25 @@ class IndependenceSims:
         x = u / sep1 + sep2 * u_2 - 1
         y = v[:, 0] / sep1 + sep2 * v_2[:, 0] - 1
         return x, y
+
+
+def _find_dim_range(sim):
+    dim = 20
+    if sim in ["linear", "exponential", "cubic"]:
+        dim = 1000
+    elif sim in [
+        "joint_normal",
+        "sin_four_pi",
+        "sin_sixteen_pi",
+        "multiplicative_noise",
+    ]:
+        dim = 10
+    elif sim in [
+        "uncorrelated_bernoulli",
+        "logarithmic",
+        "multimodal_independence",
+    ]:
+        dim = 100
+    elif sim in ["square", "diamond"]:
+        dim = 40
+    return np.linspace(3, dim, 10, dtype=int) if dim > 10 else range(3, 11)

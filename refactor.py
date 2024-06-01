@@ -3,7 +3,7 @@ import math
 import numpy as np
 from joblib import Parallel, delayed
 
-from simulations import MARRON_WAND_SIMS
+from simulations import MARRON_WAND_SIMS, _find_dim_range
 
 
 TESTS = [
@@ -24,17 +24,28 @@ def refactor_data_power(
     max_reps=1000,
     fig_name="two-sample-power-vs-d",
 ):
+    FAST_ALGS = []
     type = fig_name[-1]
-    if "two-sample" in fig_name:
-        file_path = "two-sample"
-    elif "independence" in fig_name:
-        file_path = "independence"
+    if "two-sample" in fig_name and type == "d":
+        FAST_ALGS = ["Dcorr", "Hsic"]
+        file_path = "two-sample-n-100_p-3_10"
+        sample_dimensions = range(3, 11)
+    elif "two-sample" in fig_name and type == "n":
+        file_path = "two-sample-p-10_n-10_100"
+        sample_dimensions = range(10, 110, 10)
+    elif "independence" in fig_name and type == "d":
+        FAST_ALGS = ["Dcorr", "Hsic"]
+        file_path = "independence-n-100_p-3_1000"
+        sample_dimensions = _find_dim_range(sim)
+    elif "independence" in fig_name and type == "n":
+        file_path = "independence-p-3_n-10_100"
+        sample_dimensions = range(10, 110, 10)
     else:
         raise ValueError(
-            f"fig_name is {fig_name}; must contain two-sample or independence"
+            f"fig_name is {fig_name}; must contain two-sample or independence and"
+            "end in d or n"
         )
 
-    FAST_ALGS = []
     if type == "d":
         FAST_ALGS = ["Dcorr", "Hsic"]
         if "two-sample" in fig_name:
@@ -89,7 +100,11 @@ _ = Parallel(n_jobs=-1, verbose=100)(
             alg=alg, fig_name=fig_name, sim=sim, alpha=0.05, max_reps=10000
         )
         for alg in TESTS
-        for fig_name in ["two-sample-power-vs-d", "two-sample-power-vs-n", "independence-power-vs-n"]#, "independence-power-vs-d"]
+        for fig_name in [
+            "two-sample-power-vs-d",
+            "two-sample-power-vs-n",
+            "independence-power-vs-n",
+        ]  # , "independence-power-vs-d"]
         for sim in MARRON_WAND_SIMS.keys()
     ]
 )
