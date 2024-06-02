@@ -29,8 +29,8 @@ SAVE_PATH = "independence-n-{}_p-3_1000".format(int(SAMP_SIZE))
 TESTS = {
     "KMERF": KMERF(forest="regressor"),
     #"MGC": MGC(),
-    "Dcorr": Dcorr(),
-    "Hsic": Hsic(),
+    #"Dcorr": Dcorr(),
+    #"Hsic": Hsic(),
     #"HHG": HHG(),
     #"CCA": CCA(),
     #"RV": RV(),

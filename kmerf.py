@@ -32,7 +32,7 @@ class KMERF(IndependenceTest):
         """
         self.clf.fit(x, y)
         self.distx = 1 - sim_matrix(self.clf, x)
-        self.disty = pairwise_distances(y.reshape(-1, 1), metric="euclidean")
+        self.disty = pairwise_distances(y, metric="euclidean")
         stat = _dcorr(self.distx, self.disty, bias=False, is_fast=False)
 
         return stat
