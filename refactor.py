@@ -35,15 +35,16 @@ def refactor_data_power(
         FAST_ALGS = ["Dcorr", "Hsic"]
         file_path = "two-sample-n-100_p-3_10"
         sample_dimensions = range(3, 11)
-    elif "two-sample" in fig_name and type == "n":
-        file_path = "two-sample-p-10_n-10_100"
-        sample_dimensions = range(10, 110, 10)
     elif "independence" in fig_name and type == "d":
         FAST_ALGS = ["Dcorr", "Hsic"]
         file_path = "independence-n-100_p-3_1000"
         sample_dimensions = _find_dim_range(sim)
-    elif "independence" in fig_name and type == "n":
-        file_path = "independence-p-3_n-10_100"
+    elif type == "n":
+        if "two-sample" in fig_name:
+            file_path = "two-sample"
+        elif "independence" in fig_name:
+            file_path = "independence"
+        file_path += "-p-3_n-10_100"
         sample_dimensions = range(10, 110, 10)
     else:
         raise ValueError(
