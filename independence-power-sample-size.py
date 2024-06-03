@@ -19,7 +19,7 @@ sys.path.append(os.path.realpath(".."))
 
 
 SAMP_SIZES = range(10, 110, 10)
-DIMENSION = 3
+DIMENSION = 10
 REPS = range(1000)
 
 
@@ -30,12 +30,12 @@ SAVE_PATH = "independence-p-{}_n-{}_{}".format(
 
 TESTS = {
     "KMERF": KMERF(forest="regressor"),
-    #"MGC": MGC(),
-    #"Dcorr": Dcorr(),
-    #"Hsic": Hsic(),
-    #"HHG": HHG(),
-    #"CCA": CCA(),
-    #"RV": RV(),
+    "MGC": MGC(),
+    "Dcorr": Dcorr(),
+    "Hsic": Hsic(),
+    "HHG": HHG(),
+    "CCA": CCA(),
+    "RV": RV(),
 }
 
 

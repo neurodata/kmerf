@@ -44,7 +44,7 @@ def refactor_data_power(
             file_path = "two-sample"
         elif "independence" in fig_name:
             file_path = "independence"
-        file_path += "-p-3_n-10_100"
+        file_path += "-p-10_n-10_100"
         sample_dimensions = range(10, 110, 10)
     else:
         raise ValueError(
