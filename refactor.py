@@ -7,8 +7,8 @@ from simulations import MARRON_WAND_SIMS, INDEPENDENCE_SIMS, _find_dim_range
 
 
 SIMULATIONS = {
-    "two-sample-power" : MARRON_WAND_SIMS.keys(),
-    "independence-power" : INDEPENDENCE_SIMS
+    "two-sample-power": {"sim": MARRON_WAND_SIMS.keys(), "max_reps": 1000},
+    "independence-power": {"sim": INDEPENDENCE_SIMS, "max_reps": 10000},
 }
 
 TESTS = [
@@ -57,7 +57,9 @@ def refactor_data_power(
             pvalues = []
             for rep in range(max_reps):
                 try:
-                    pvalue = np.genfromtxt(f"{file_path}/{sim}_{alg}_{samp_dim}_{rep}.txt")
+                    pvalue = np.genfromtxt(
+                        f"{file_path}/{sim}_{alg}_{samp_dim}_{rep}.txt"
+                    )
                 except FileNotFoundError:
                     break
                 pvalues.append(pvalue)
@@ -86,15 +88,19 @@ def refactor_data_power(
 _ = Parallel(n_jobs=-1, verbose=100)(
     [
         delayed(refactor_data_power)(
-            alg=alg, fig_name=fig_name, sim=sim, alpha=0.05, max_reps=10000
+            alg=alg,
+            fig_name=fig_name,
+            sim=sim,
+            alpha=0.05,
+            max_reps=SIMULATIONS[fig_name[:-5]]["max_reps"],
         )
         for alg in TESTS
         for fig_name in [
             "two-sample-power-vs-d",
             "two-sample-power-vs-n",
             "independence-power-vs-n",
-            "independence-power-vs-d"
+            "independence-power-vs-d",
         ]
-        for sim in SIMULATIONS[fig_name[:-5]]
+        for sim in SIMULATIONS[fig_name[:-5]]["sim"]
     ]
 )
