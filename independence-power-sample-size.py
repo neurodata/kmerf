@@ -20,7 +20,7 @@ sys.path.append(os.path.realpath(".."))
 
 SAMP_SIZES = range(10, 110, 10)
 DIMENSION = 10
-REPS = range(1000)
+REPS = range(1000, 10000)
 
 
 SAVE_PATH = "independence-p-{}_n-{}_{}".format(
